@@ -1,0 +1,105 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #282c34;
+  color: white;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.App {
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
+}
+
+.App-header {
+  padding: 20px;
+}
+
+.chat-container {
+  background-color: #444;
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 400px;
+}
+
+.messages {
+  flex-grow: 1;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid #666;
+  border-radius: 5px;
+  background-color: #333;
+}
+
+.message {
+  position: relative;
+  margin: 5px 0;
+  padding: 10px;
+  background-color: #555;
+  border-radius: 5px;
+  text-align: left;
+}
+
+.message-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #ccc;
+  margin-top: 5px;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+  color: #aaa;
+}
+
+.status {
+  font-size: 1rem;
+}
+
+.status.sending {
+  color: #ffcc00; /* Jaune pour "en cours" */
+}
+
+.status.sent {
+  color: #4caf50; /* Vert pour "envoyé" */
+}
+
+.status.failed {
+  color: #f44336; /* Rouge pour "échec" */
+}
+
+.input-container {
+  display: flex;
+}
+
+input {
+  flex-grow: 1;
+  padding: 10px;
+  border: 1px solid #666;
+  border-radius: 5px;
+  margin-right: 10px;
+  background-color: #333;
+  color: white;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #61dafb;
+  color: black;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #21a1f1;
+}
