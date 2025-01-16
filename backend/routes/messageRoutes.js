@@ -1,26 +1,53 @@
 const express = require('express');
 const router = express.Router();
 const Message = require('../models/Message');
+const User = require('../models/User');
 
-// Envoyer un message
-router.post('/', async (req, res) => {
-  try {
-    const newMessage = new Message(req.body);
-    const savedMessage = await newMessage.save();
-    res.status(201).json(savedMessage);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+// Route pour envoyer un message
+router.post('/send', async (req, res) => {
+    const { sender, recipient, content, room, type } = req.body;
+
+    if (!sender || !content || !type) {
+        return res.status(400).send({ error: 'Les champs sender, content et type sont obligatoires.' });
+    }
+
+    if (type === 'private' && !recipient) {
+        return res.status(400).send({ error: 'Le champ recipient est obligatoire pour un message privé.' });
+    }
+
+    if (type === 'channel' && !room) {
+        return res.status(400).send({ error: 'Le champ room est obligatoire pour un message de canal.' });
+    }
+
+    try {
+        const user = await User.findOne({ username: sender });
+        if (!user) {
+            return res.status(404).send({ error: 'Utilisateur introuvable.' });
+        }
+
+        if (type === 'channel' && (!user.channels.includes(room))) {
+            return res.status(403).send({ error: 'Vous n’êtes pas membre de ce canal.' });
+        }
+
+        const message = new Message({ sender, recipient, content, room, type });
+        await message.save();
+
+        res.status(201).send({ message: 'Message envoyé', message });
+    } catch (err) {
+        res.status(500).send({ error: 'Erreur lors de l’envoi du message', details: err.message });
+    }
 });
 
-// Obtenir tous les messages d'un salon
-router.get('/:roomId', async (req, res) => {
-  try {
-    const messages = await Message.find({ room: req.params.roomId }).populate('user', 'username');
-    res.json(messages);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Route pour récupérer les messages d'un canal
+router.get('/channel/:channel', async (req, res) => {
+    const { channel } = req.params;
+
+    try {
+        const messages = await Message.find({ room: channel }).sort({ createdAt: 1 }); // Trie par date croissante
+        res.status(200).send(messages);
+    } catch (err) {
+        res.status(500).send({ error: 'Erreur lors de la récupération des messages', details: err.message });
+    }
 });
 
 module.exports = router;
