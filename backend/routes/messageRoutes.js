@@ -50,4 +50,21 @@ router.get('/channel/:channel', async (req, res) => {
     }
 });
 
+router.get('/private/:sender/:recipient', async (req, res) => {
+    const { sender, recipient } = req.params;
+
+    try {
+        const messages = await Message.find({
+            type: 'private',
+            $or: [
+                { sender, recipient },
+                { sender: recipient, recipient: sender },
+            ],
+        }).sort({ createdAt: 1 });
+        res.status(200).send(messages);
+    } catch (err) {
+        res.status(500).send({ error: 'Erreur lors de la récupération des messages privés', details: err.message });
+    }
+});
+
 module.exports = router;

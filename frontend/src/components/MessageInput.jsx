@@ -28,12 +28,12 @@ const MessageInput = ({ user, channel, onMessageSend, onCommand }) => {
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Tapez un message ou une commande..."
-                className="flex-grow p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-grow p-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
             />
             <button
                 onClick={handleSend}
-                className="ml-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                className="ml-4 bg-indigo-500 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded"
             >
                 Envoyer
             </button>

@@ -111,9 +111,9 @@ const handleCommand = async (command, user, currentChannel, setCurrentChannel) =
             }
             break;
 
-            case '/who':
+            case '/users':
                 if (args.length < 1) {
-                    alert('Usage : /who channel_name');
+                    alert('Usage : /users channel_name');
                     return;
                 }
                 try {

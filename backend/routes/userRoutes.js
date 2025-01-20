@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Message = require('../models/Message');
 
 // Route pour connecter un utilisateur
 router.post('/login', async (req, res) => {
@@ -132,6 +133,47 @@ router.get('/users/:channel', async (req, res) => {
         res.status(200).send(users);
     } catch (err) {
         res.status(500).send({ error: 'Erreur lors de la récupération des utilisateurs', details: err.message });
+    }
+});
+
+router.get('/:username/channels', async (req, res) => {
+    const { username } = req.params;
+
+    try {
+        // Récupère l'utilisateur pour ses canaux publics
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(404).send({ error: 'Utilisateur introuvable.' });
+        }
+
+        // Récupère les utilisateurs avec qui il a échangé des messages privés
+        const privateConversations = await Message.aggregate([
+            {
+                $match: {
+                    type: 'private',
+                    $or: [{ sender: username }, { recipient: username }],
+                },
+            },
+            {
+                $group: {
+                    _id: {
+                        $cond: [
+                            { $eq: ['$sender', username] },
+                            '$recipient',
+                            '$sender',
+                        ],
+                    },
+                },
+            },
+        ]);
+
+        const privateChannels = privateConversations.map((conv) => `@${conv._id}`);
+        res.status(200).send({
+            publicChannels: user.channels,
+            privateChannels,
+        });
+    } catch (err) {
+        res.status(500).send({ error: 'Erreur lors de la récupération des canaux', details: err.message });
     }
 });
 
