@@ -1,160 +1,61 @@
-import axios from 'axios';
+import React, { useState } from "react";
+import socket from "../utils/socket";
 
-const handleCommand = async (command, user, currentChannel, setCurrentChannel) => {
-    const [cmd, ...args] = command.split(' ');
-    switch (cmd) {
-        case '/nick':
-            if (args.length < 1) {
-                alert('Usage : /nick new_username');
-                return;
-            }
-            try {
-                const newUsername = args[0];
-                await axios.post('http://localhost:5000/api/users/nick', {
-                    oldUsername: user.username,
-                    newUsername,
-                });
-                alert(`Votre pseudonyme a été changé en ${newUsername}`);
-                user.username = newUsername; // Met à jour localement
-            } catch (err) {
-                console.error('Erreur lors du changement de pseudonyme :', err.message);
-                alert('Impossible de changer le pseudonyme.');
-            }
-            break;
+const CommandInput = ({ user, currentChannel, setCurrentChannel }) => {
+    const [command, setCommand] = useState("");
+    const [privateChannels, setPrivateChannels] = useState("");
 
-        case '/join':
-            if (args.length < 1) {
-                alert('Usage : /join channel_name');
-                return;
-            }
-            try {
-                const channelName = args[0];
-                await axios.post('http://localhost:5000/api/rooms/join', {
-                    username: user.username,
-                    channel: channelName,
-                });
-                alert(`Vous avez rejoint le canal ${channelName}`);
-                setCurrentChannel(channelName); // Change de canal
-            } catch (err) {
-                console.error('Erreur lors de la connexion au canal :', err.message);
-                alert('Impossible de rejoindre ce canal.');
-            }
-            break;
-
-        case '/leave':
-            if (args.length < 1) {
-                alert('Usage : /leave channel_name');
-                return;
-            }
-            try {
-                const channelName = args[0];
-                await axios.post('http://localhost:5000/api/rooms/quit', {
-                    username: user.username,
-                    channel: channelName,
-                });
-                alert(`Vous avez quitté le canal ${channelName}`);
-                if (channelName === currentChannel) {
-                    setCurrentChannel('management'); // Revient au canal par défaut
+    // Fonction pour gérer les commandes
+    const handleCommand = () => {
+        if (command.trim()) {
+            const [cmd, ...args] = command.split(" ");
+            if (cmd === "/msg" && args.length >= 2) {
+                const recipient = args[0];
+                const content = args.slice(1).join(" ");
+                const privateChannel = `@${[user.username, recipient].sort().join("-")}`;
+    
+                // Ajoute le canal privé si nécessaire
+                if (!privateChannels.includes(privateChannel)) {
+                    setPrivateChannels((prev) => [...prev, privateChannel]);
                 }
-            } catch (err) {
-                console.error('Erreur lors de la sortie du canal :', err.message);
-                alert('Impossible de quitter ce canal.');
-            }
-            break;
-
-        case '/list':
-            try {
-                const res = await axios.get('http://localhost:5000/api/rooms/list');
-                alert(`Canaux disponibles :\n${res.data.map((c) => c.name).join('\n')}`);
-            } catch (err) {
-                console.error('Erreur lors de la récupération des canaux :', err.message);
-                alert('Impossible de récupérer la liste des canaux.');
-            }
-            break;
-
-        case '/create':
-            if (args.length < 1) {
-                alert('Usage : /create channel_name');
-                return;
-            }
-            try {
-                const channelName = args[0];
-                await axios.post('http://localhost:5000/api/rooms/create', {
-                    name: channelName,
-                    createdBy: user.username,
+    
+                // Émet un message privé via Socket.IO
+                socket.emit("send_message", {
+                    sender: user.username,
+                    recipient,
+                    content,
+                    type: "private",
                 });
-                alert(`Canal "${channelName}" créé avec succès.`);
-            } catch (err) {
-                console.error('Erreur lors de la création du canal :', err.message);
-                alert('Impossible de créer le canal.');
+    
+                setCurrentChannel(privateChannel); // Change le canal actif
+            } else {
+                socket.emit("command", { command: cmd, args, user });
             }
-            break;
+            setCommand("");
+        }
+    };
+    
 
-        case '/msg':
-            if (args.length < 2) {
-            alert('Usage : /msg username message_content');
-            return;
-            }
-            try {
-            const [recipient, ...messageParts] = args;
-            const messageContent = messageParts.join(' ');
-            await axios.post('http://localhost:5000/api/messages/send', {
-                sender: user.username,
-                recipient,
-                content: messageContent,
-                type: 'private',
-            });
-            alert(`Message envoyé à ${recipient}`);
-            } catch (err) {
-            console.error('Erreur lors de l’envoi du message privé :', err.message);
-            alert('Impossible d’envoyer le message.');
-            }
-            break;
+    // Gestion de la saisie et de l'envoi
+    const handleSend = () => {
+        if (command.trim()) {
+            handleCommand(command);
+            setCommand(""); // Réinitialise la saisie
+        }
+    };
 
-            case '/users':
-                if (args.length < 1) {
-                    alert('Usage : /users channel_name');
-                    return;
-                }
-                try {
-                    const channelName = args[0];
-                    const res = await axios.get(`http://localhost:5000/api/users/users/${channelName}`);
-                    alert(`Utilisateurs dans ${channelName} :\n${res.data.map((u) => u.username).join('\n')}`);
-                } catch (err) {
-                    console.error('Erreur lors de la récupération des utilisateurs :', err.message);
-                    alert('Impossible de récupérer la liste des utilisateurs.');
-                }
-                break;
-
-        case '/quit':
-            try {
-                alert('Vous avez été déconnecté.');
-                window.location.reload(); // Recharge la page pour simuler une déconnexion
-            } catch (err) {
-                console.error('Erreur lors de la déconnexion :', err.message);
-            }
-            break;
-
-
-        case '/help':
-            alert(
-                'Commandes disponibles :\n' +
-                '/nick new_username - Changer de pseudonyme\n' +
-                '/join channel_name - Rejoindre un canal\n' +
-                '/leave channel_name - Quitter un canal\n' +
-                '/list - Lister les canaux\n' +
-                '/create channel_name - Créer un nouveau canal\n' +
-                '/msg username message_content - Envoyer un message privé\n' +
-                '/who channel_name - Lister les utilisateurs d’un canal\n' +
-                '/quit - Déconnexion\n' +
-                '/help - Afficher cette aide'
-            );
-            break;
-
-        default:
-            alert(`Commande inconnue : ${cmd}`);
-            break;
-    }
+    return (
+        <div className="p-4">
+            <input
+                type="text"
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                placeholder="Tapez une commande ou un message..."
+                className="w-full px-4 py-2 border rounded"
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            />
+        </div>
+    );
 };
 
-export default handleCommand;
+export default CommandInput;
